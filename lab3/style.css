@@ -1,0 +1,8 @@
+.composition {
+    background-image: url('img/bg.jpg');
+    background-size: 600px 400px;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 600px;
+    height: 400px;
+}
