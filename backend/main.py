@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.staticfiles import StaticFiles
 from database import init_db
-from routers import auth, posts, users, metadata
+from api import routers
 from dependencies import http_bearer
 
 # Инициализация БД при старте
@@ -65,10 +65,8 @@ app.add_middleware(
 )
 
 # Подключение роутеров
-app.include_router(auth.router)
-app.include_router(posts.router)
-app.include_router(users.router)
-app.include_router(metadata.router)
+for router in routers:
+    app.include_router(router)
 
 # Подключение статических файлов (HTML страница)
 try:
@@ -80,6 +78,14 @@ except:
 @app.get("/")
 def root():
     """Корневой эндпоинт"""
+    from fastapi.responses import FileResponse
+    import os
+    
+    # Пытаемся вернуть HTML страницу, если она существует
+    frontend_path = os.path.join("frontend", "index.html")
+    if os.path.exists(frontend_path):
+        return FileResponse(frontend_path)
+    
     return {
         "message": "Imageboard API",
         "docs": "/docs",

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 
 # User Schemas
@@ -50,16 +50,34 @@ class PostUpdate(BaseModel):
     # Файл можно обновить через отдельный эндпоинт
 
 
+class PostFileResponse(BaseModel):
+    id: int
+    file_path: Optional[str] = None  # Путь к файлу (внутренний)
+    file_type: str  # MIME type файла
+    file_name: str  # Оригинальное имя файла
+    file_url: Optional[str] = None  # URL для получения файла
+    file_size: Optional[int] = None  # Размер файла в байтах
+    order: int  # Порядок файла в посте
+
+    class Config:
+        from_attributes = True
+
+
 class PostResponse(BaseModel):
     id: int
-    text: str
-    file_path: Optional[str] = None  # Путь к файлу (внутренний)
-    file_type: Optional[str] = None  # MIME type файла
-    file_name: Optional[str] = None  # Оригинальное имя файла
-    file_url: Optional[str] = None  # URL для получения файла (кликните для просмотра в Swagger)
+    text: Optional[str] = None  # Текст поста (опциональный)
+    # Старые поля для обратной совместимости
+    file_path: Optional[str] = None  # Путь к файлу (внутренний, deprecated)
+    file_type: Optional[str] = None  # MIME type файла (deprecated)
+    file_name: Optional[str] = None  # Оригинальное имя файла (deprecated)
+    file_url: Optional[str] = None  # URL для получения файла (deprecated)
+    # Новые поля для поддержки нескольких файлов
+    files: List[PostFileResponse] = []  # Список файлов поста
     date: datetime
     is_deleted: bool
     upvotes: int
+    author_nick: Optional[str] = None  # Ник пользователя, создавшего пост
+    author_id: Optional[int] = None  # ID пользователя, создавшего пост
 
     class Config:
         from_attributes = True
@@ -73,4 +91,23 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     login: Optional[str] = None
+
+
+# Comment Schemas
+class CommentCreate(BaseModel):
+    text: str = Field(..., min_length=1, max_length=5000)
+
+
+class CommentResponse(BaseModel):
+    id: int
+    post_id: int
+    user_id: int
+    text: str
+    date: datetime
+    is_deleted: bool
+    author_nick: Optional[str] = None  # Ник пользователя, создавшего комментарий
+    author_id: Optional[int] = None  # ID пользователя, создавшего комментарий
+
+    class Config:
+        from_attributes = True
 

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Optional
 from database import get_db
-from models import Post
+from models import Post, PostFile
 from file_utils import get_file_path
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC, Picture as FLACPicture
@@ -237,12 +237,124 @@ def get_post_metadata(
     }
 
 
+@router.get("/{post_id}/files/{file_id}/metadata")
+def get_file_metadata(
+    post_id: int,
+    file_id: int,
+    db: Session = Depends(get_db)
+):
+    """Получить метаданные конкретного аудио файла из поста (для альбомов)"""
+    post_file = db.query(PostFile).filter(
+        PostFile.id == file_id,
+        PostFile.post_id == post_id
+    ).first()
+    
+    if not post_file:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Файл не найден"
+        )
+    
+    # Проверяем, что это аудио файл
+    if not post_file.file_type or not post_file.file_type.startswith('audio/'):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Метаданные доступны только для аудио файлов"
+        )
+    
+    file_path = get_file_path(post_file.file_path)
+    if not file_path or not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Файл не найден на сервере"
+        )
+    
+    # Извлекаем метаданные
+    metadata = extract_audio_metadata(file_path, post_file.file_type)
+    
+    if not metadata:
+        return {
+            "title": None,
+            "artist": None,
+            "album": None,
+            "cover": None,
+            "cover_url": None
+        }
+    
+    # Формируем URL для обложки (если есть)
+    cover_url = None
+    if metadata.get('cover'):
+        cover_url = f"/posts/{post_id}/files/{file_id}/cover"
+    
+    return {
+        "title": metadata.get('title'),
+        "artist": metadata.get('artist'),
+        "album": metadata.get('album'),
+        "cover": metadata.get('cover'),  # Base64 для прямого использования
+        "cover_url": cover_url  # URL для получения обложки отдельно
+    }
+
+
+@router.get("/{post_id}/files/{file_id}/cover")
+def get_file_cover(
+    post_id: int,
+    file_id: int,
+    db: Session = Depends(get_db)
+):
+    """Получить обложку конкретного аудио файла из поста (для альбомов)"""
+    post_file = db.query(PostFile).filter(
+        PostFile.id == file_id,
+        PostFile.post_id == post_id
+    ).first()
+    
+    if not post_file:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Файл не найден"
+        )
+    
+    file_path = get_file_path(post_file.file_path)
+    if not file_path or not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Файл не найден"
+        )
+    
+    metadata = extract_audio_metadata(file_path, post_file.file_type)
+    
+    if not metadata or not metadata.get('cover'):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Обложка не найдена в метаданных файла"
+        )
+    
+    # Парсим data URL
+    cover_data_url = metadata['cover']
+    if cover_data_url.startswith('data:'):
+        # Извлекаем MIME type и данные
+        header, data = cover_data_url.split(',', 1)
+        mime_type = header.split(';')[0].split(':')[1]
+        cover_bytes = base64.b64decode(data)
+        
+        from fastapi.responses import Response
+        return Response(
+            content=cover_bytes,
+            media_type=mime_type,
+            headers={"Cache-Control": "public, max-age=3600"}
+        )
+    
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Ошибка обработки обложки"
+    )
+
+
 @router.get("/{post_id}/cover")
 def get_post_cover(
     post_id: int,
     db: Session = Depends(get_db)
 ):
-    """Получить обложку аудио файла поста"""
+    """Получить обложку аудио файла поста (старый формат)"""
     post = db.query(Post).filter(Post.id == post_id).first()
     
     if not post or not post.file_path:
