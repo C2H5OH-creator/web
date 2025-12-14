@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="style/index.css" />
+    <link rel="stylesheet" href="/static/style/index.css" />
     <title>Leti.ch</title>
 </head>
 <body>
 
     <div class="TopLine">
         <nav>
-          <p>Leti.ch! Лучший имиджборд в мире!</p>
+        <p>Leti.ch! Лучший имиджборд в мире!</p>
           <button id="nav-theme-toggle">Сменить тему</button>
         </nav>
     </div>
@@ -23,10 +23,10 @@
         <!-- Форма авторизации (показывается когда не авторизован) -->
         <div id="auth-login-container">
           <div id="auth-container">
-            <form id="login-form">
+        <form id="login-form">
                 <input name="login" placeholder="Логин" required>
                 <input name="password" type="password" placeholder="Пароль" required>
-                <button type="submit">Войти</button>
+          <button type="submit">Войти</button>
                 <button type="button" id="show-register-btn">Зарегистрироваться</button>
             </form>
 
@@ -37,7 +37,7 @@
                 <input name="reg_nickname" placeholder="Ник" required>
                 <button type="submit">Зарегистрироваться</button>
                 <button type="button" id="show-login-btn">Войти</button>
-            </form>
+        </form>
         </div>
 
         <!-- Информация о пользователе (показывается когда авторизован) -->
@@ -134,27 +134,27 @@
     <footer>
         <p>Все права защищены © 2025 Leti.ch</p>
     </footer>
-    
+
     <!-- Подключение скриптов в правильном порядке -->
     <!-- 1. Конфигурация (должна быть первой) -->
-    <script src="js/env.js"></script>
+    <script src="/static/js/env.js"></script>
     
     <!-- 2. Утилиты и вспомогательные функции -->
-    <script src="js/auth.js"></script>
+    <script src="/static/js/auth.js"></script>
     
     <!-- 3. Функциональность (зависит от config и auth) -->
-    <script src="js/posts.js"></script>
+    <script src="/static/js/posts.js"></script>
 
     <!-- Страница для создания новых постов -->
-    <script src="js/upload.js"></script>
+    <script src="/static/js/upload.js"></script>
     
     <!-- Страница просмотра поста -->
-    <script src="js/post-view.js"></script>
+    <script src="/static/js/post-view.js"></script>
     
     <!-- 4. Инициализация UI (зависит от всех модулей) -->
-    <script src="js/theme.js"></script>
+    <script src="/static/js/theme.js"></script>
     
     <!-- 5. Инициализация приложения (последний) -->
-    <script src="js/init.js"></script>
+    <script src="/static/js/init.js"></script>
 </body>
 </html>

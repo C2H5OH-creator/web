@@ -64,11 +64,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Подключение роутеров
-for router in routers:
-    app.include_router(router)
-
-# Подключение статических файлов (HTML страница)
+# Подключение статических файлов (должно быть ПЕРЕД роутерами, чтобы не конфликтовать)
 import os
 from pathlib import Path
 
@@ -82,12 +78,47 @@ if not frontend_dir.exists():
 
 try:
     if frontend_dir.exists():
+        # Основной путь для статических файлов
         app.mount("/static", StaticFiles(directory=str(frontend_dir)), name="static")
+        
+        # Дополнительные маршруты для обратной совместимости (без /static/)
+        # Подключаем ПЕРЕД API роутерами, чтобы они имели приоритет
+        style_dir = frontend_dir / "style"
+        js_dir = frontend_dir / "js"
+        
+        if style_dir.exists():
+            app.mount("/style", StaticFiles(directory=str(style_dir)), name="style")
+            print(f"✓ Маршрут /style подключен из: {style_dir}")
+        else:
+            print(f"⚠ Директория style не найдена: {style_dir}")
+        
+        if js_dir.exists():
+            app.mount("/js", StaticFiles(directory=str(js_dir)), name="js")
+            print(f"✓ Маршрут /js подключен из: {js_dir}")
+        else:
+            print(f"⚠ Директория js не найдена: {js_dir}")
+        
         print(f"✓ Статические файлы подключены из: {frontend_dir}")
+        print(f"  Доступны по путям: /static/, /style/, /js/")
+        
+        # Проверяем наличие файлов
+        index_css = style_dir / "index.css"
+        env_js = js_dir / "env.js"
+        print(f"  Проверка файлов:")
+        print(f"    /style/index.css: {'✓' if index_css.exists() else '✗'} ({index_css})")
+        print(f"    /js/env.js: {'✓' if env_js.exists() else '✗'} ({env_js})")
     else:
         print(f"⚠ Директория frontend не найдена: {frontend_dir}")
+        print(f"  Текущая рабочая директория: {Path.cwd()}")
+        print(f"  Директория main.py: {current_dir}")
 except Exception as e:
     print(f"⚠ Ошибка подключения статических файлов: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Подключение роутеров (после статических файлов)
+for router in routers:
+    app.include_router(router)
 
 
 @app.get("/")
