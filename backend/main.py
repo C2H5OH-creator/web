@@ -69,27 +69,49 @@ for router in routers:
     app.include_router(router)
 
 # Подключение статических файлов (HTML страница)
+import os
+from pathlib import Path
+
+# Определяем путь к frontend относительно текущего файла
+current_dir = Path(__file__).parent
+frontend_dir = current_dir.parent / "frontend"  # ../frontend от backend/
+
+# Если frontend не найден относительно backend, пробуем найти в текущей директории
+if not frontend_dir.exists():
+    frontend_dir = current_dir / "frontend"
+
 try:
-    app.mount("/static", StaticFiles(directory="frontend"), name="static")
-except:
-    pass  # Если директория не существует, пропускаем
+    if frontend_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(frontend_dir)), name="static")
+        print(f"✓ Статические файлы подключены из: {frontend_dir}")
+    else:
+        print(f"⚠ Директория frontend не найдена: {frontend_dir}")
+except Exception as e:
+    print(f"⚠ Ошибка подключения статических файлов: {e}")
 
 
 @app.get("/")
 def root():
-    """Корневой эндпоинт"""
+    """Корневой эндпоинт - возвращает index.html"""
     from fastapi.responses import FileResponse
-    import os
     
-    # Пытаемся вернуть HTML страницу, если она существует
-    frontend_path = os.path.join("frontend", "index.html")
-    if os.path.exists(frontend_path):
-        return FileResponse(frontend_path)
+    # Пытаемся найти index.html в разных местах
+    possible_paths = [
+        frontend_dir / "index.html",
+        Path("frontend") / "index.html",
+        Path("../frontend") / "index.html",
+        Path("./frontend") / "index.html",
+    ]
+    
+    for frontend_path in possible_paths:
+        if frontend_path.exists():
+            return FileResponse(str(frontend_path))
     
     return {
         "message": "Imageboard API",
         "docs": "/docs",
-        "redoc": "/redoc"
+        "redoc": "/redoc",
+        "frontend": "Откройте /static/index.html или настройте путь к frontend"
     }
 
 
